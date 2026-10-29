@@ -1,0 +1,532 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   ECHOES — Liquid Glass Design System  (v7.0.1)
+   ------------------------------------------------------------------ */
+
+@theme {
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Montserrat", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-ink: #0b0c10;
+  --color-ink-2: #101219;
+  --color-mist: #e8eaf2;
+  --color-mist-dim: #9aa0b4;
+  --color-mist-faint: #626a80;
+
+  --animate-drift-a: drift-a 34s ease-in-out infinite;
+  --animate-drift-b: drift-b 46s ease-in-out infinite;
+  --animate-drift-c: drift-c 58s ease-in-out infinite;
+  --animate-breathe: breathe 9s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.6s linear infinite;
+  --animate-spin-slow: spin 26s linear infinite;
+  --animate-rise: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-veil: veil 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(-6%, -4%, 0) scale(1.05) rotate(0deg); }
+  33%      { transform: translate3d(10%, 8%, 0) scale(1.22) rotate(14deg); }
+  66%      { transform: translate3d(-2%, 14%, 0) scale(0.96) rotate(-9deg); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(8%, 6%, 0) scale(1.12) rotate(0deg); }
+  40%      { transform: translate3d(-12%, -6%, 0) scale(0.9) rotate(-18deg); }
+  70%      { transform: translate3d(4%, -12%, 0) scale(1.28) rotate(10deg); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate3d(0, 10%, 0) scale(1) rotate(0deg); }
+  50%      { transform: translate3d(-14%, -10%, 0) scale(1.35) rotate(22deg); }
+}
+@keyframes breathe {
+  0%, 100% { transform: scale(1.04) translate3d(0, 0, 0); }
+  50%      { transform: scale(1.16) translate3d(1.5%, -2%, 0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -180% 0; }
+  100% { background-position: 180% 0; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translate3d(0, 18px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes veil {
+  from { clip-path: inset(0 100% 0 0); opacity: 0.2; }
+  to   { clip-path: inset(0 0 0 0); opacity: 1; }
+}
+@keyframes eq-bar {
+  0%, 100% { transform: scaleY(0.22); }
+  50%      { transform: scaleY(1); }
+}
+@keyframes grain-shift {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(-3%, 2%, 0); }
+  50%  { transform: translate3d(2%, -3%, 0); }
+  75%  { transform: translate3d(-2%, -2%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* --------------------------------- base --------------------------------- */
+
+@layer base {
+  :root {
+    /**
+     * The single source of truth for surface blur, written straight from the
+     * 2–50 px slider. `--glass-blur` is kept as an alias so no rule can drift
+     * onto a hardcoded value again.
+     */
+    --user-blur-val: 5px;
+    --blur-intensity: 5px;
+    --glass-blur: var(--blur-intensity, 5px);
+    /* 0% at 2px → ~4% at 50px */
+    --glass-tint: 0.25%;
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-fill-a: rgba(255, 255, 255, 0.085);
+    --glass-fill-b: rgba(255, 255, 255, 0.022);
+    --glass-lift: 0 24px 60px -28px rgba(0, 0, 0, 0.85);
+
+    --accent-1: #4c3bd4;
+    --accent-2: #8b5cf6;
+    --accent-3: #d946a8;
+    --accent-glow: rgba(139, 92, 246, 0.5);
+
+    --ambient-opacity: 1;
+    color-scheme: dark;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-ink);
+    color: var(--color-mist);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--accent-2) 55%, transparent);
+    color: #fff;
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--accent-2) 80%, white);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      var(--accent-2) 0%,
+      var(--accent-2) var(--fill, 50%),
+      rgba(255, 255, 255, 0.13) var(--fill, 50%),
+      rgba(255, 255, 255, 0.13) 100%
+    );
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 14px;
+    width: 14px;
+    margin-top: -5px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 14px rgba(0, 0, 0, 0.6),
+      0 0 18px var(--accent-glow);
+    transition: transform 0.18s ease;
+  }
+  input[type="range"]:active::-webkit-slider-thumb {
+    transform: scale(1.25);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.13);
+  }
+  input[type="range"]::-moz-range-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: var(--accent-2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    height: 13px;
+    width: 13px;
+    border: none;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 14px var(--accent-glow);
+  }
+}
+
+/* ------------------------------ glass utils ------------------------------ */
+
+@utility glass {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(
+    145deg,
+    var(--glass-fill-a),
+    var(--glass-fill-b) 46%,
+    rgba(255, 255, 255, 0.05)
+  );
+  /**
+   * Keeps the pane readable at 50 px and near-transparent at 2 px, so the
+   * experimental refraction is clearly visible at the sharp end. Written by the
+   * provider as a percentage — CSS cannot turn a px length into one.
+   */
+  background-color: color-mix(in srgb, #ffffff var(--glass-tint, 0%), transparent);
+  backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(165%) brightness(1.05);
+  -webkit-backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(165%) brightness(1.05);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.16),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
+    inset 1px 0 0 0 rgba(255, 255, 255, 0.05),
+    var(--glass-lift);
+}
+
+@utility glass-thin {
+  position: relative;
+  isolation: isolate;
+  background-image: linear-gradient(150deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  /* Exact slider value: 2px reads as clear glass, 50px as deep frost. */
+  backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 10px 30px -18px rgba(0, 0, 0, 0.8);
+}
+
+/* pointer-tracked specular sheen */
+@utility sheen {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.45s ease;
+    background: radial-gradient(
+      340px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(255, 255, 255, 0.13),
+      rgba(255, 255, 255, 0.04) 38%,
+      transparent 66%
+    );
+  }
+  &:hover::after,
+  &:focus-visible::after {
+    opacity: 1;
+  }
+}
+
+@utility lift {
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.5s ease;
+  will-change: transform;
+  &:hover {
+    transform: translate3d(0, -6px, 0);
+    border-color: rgba(255, 255, 255, 0.24);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.22),
+      0 34px 70px -30px rgba(0, 0, 0, 0.9),
+      0 0 44px -14px var(--accent-glow);
+  }
+}
+
+/** Repeated grid cards: real glass, but a lighter blur and paint containment. */
+@utility glass-card {
+  position: relative;
+  isolation: isolate;
+  contain: layout paint;
+  background-image: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.018) 52%,
+    rgba(255, 255, 255, 0.042)
+  );
+  backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.13),
+    0 18px 44px -26px rgba(0, 0, 0, 0.9);
+}
+
+/**
+ * Global UI scale wrapper. `zoom` scales every descendant — px, rem, vw-based
+ * alike — and reflows layout correctly (unlike transform). The wrapper's own
+ * box is divided by the scale so it still fills the viewport exactly.
+ */
+@utility ui-scale-root {
+  zoom: var(--echoes-ui-scale, 1);
+  width: calc(100vw / var(--echoes-ui-scale, 1));
+  height: calc(100dvh / var(--echoes-ui-scale, 1));
+}
+
+/**
+ * Liquid-glass recipe for every dropdown / popover / menu.
+ * Opaque dark base under the blur so menus never read as plain transparent or
+ * unstyled white boxes: a solid slate-900-ish layer at 82% sits beneath
+ * backdrop-filter: blur(var(--blur-intensity)) — Liquid Glass is always on.
+ */
+@utility glass-menu {
+  position: relative;
+  isolation: isolate;
+  background-color: rgba(15, 18, 26, 0.82);
+  background-image: linear-gradient(
+    150deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.02) 46%,
+    rgba(255, 255, 255, 0.04)
+  );
+  backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(160%) brightness(1.05);
+  -webkit-backdrop-filter: blur(var(--blur-intensity, 5px)) saturate(160%) brightness(1.05);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.04),
+    0 28px 60px -26px rgba(0, 0, 0, 0.95),
+    0 0 40px -18px var(--accent-glow);
+}
+
+/** Small badges and chips: a fraction of the user blur, never a fixed value. */
+@utility glass-chip {
+  backdrop-filter: blur(calc(var(--blur-intensity, 5px) * 0.6)) saturate(150%);
+  -webkit-backdrop-filter: blur(calc(var(--blur-intensity, 5px) * 0.6)) saturate(150%);
+}
+
+/** Modal scrims: just enough separation to read the panel above them. */
+@utility glass-scrim {
+  backdrop-filter: blur(calc(var(--blur-intensity, 5px) * 0.35)) saturate(120%);
+  -webkit-backdrop-filter: blur(calc(var(--blur-intensity, 5px) * 0.35)) saturate(120%);
+}
+
+@utility hairline {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.13);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.26);
+    background-clip: content-box;
+  }
+}
+
+@utility fade-mask-r {
+  mask-image: linear-gradient(90deg, #000 82%, transparent 100%);
+}
+
+@utility fade-mask-b {
+  mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+}
+
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+}
+
+@utility skeleton {
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.045) 22%,
+    rgba(255, 255, 255, 0.12) 42%,
+    rgba(255, 255, 255, 0.045) 62%
+  );
+  background-size: 220% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/**
+ * Cover & media animations gate. When the preference is off, album art, covers
+ * and avatars stop breathing and stop zooming on hover — everywhere at once.
+ */
+:root[data-covers="off"] .cover-zoom,
+:root[data-covers="off"] .cover-zoom * {
+  animation: none !important;
+}
+:root[data-covers="off"] .cover-zoom,
+:root[data-covers="off"] .group:hover .cover-zoom {
+  transform: none !important;
+}
+
+/** Waveform bars: scaleY only, so the compositor animates them. */
+@keyframes waveform-pulse {
+  0%, 100% { transform: scaleY(0.42); }
+  50%      { transform: scaleY(1); }
+}
+
+@utility waveform-bar {
+  transform-origin: center;
+  min-width: 2px;
+  animation-name: waveform-pulse;
+  animation-iteration-count: infinite;
+  animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  will-change: transform;
+}
+
+@utility eq-bar {
+  transform-origin: bottom;
+  animation: eq-bar 1.05s ease-in-out infinite;
+}
+
+/* ---------------------- experimental liquid glass ------------------------- */
+
+/**
+ * Experimental Liquid Glass rules live in `components/LiquidGlassFilter.tsx` as a
+ * runtime-injected stylesheet, NOT here.
+ *
+ * Reason: the build-time CSS minifier (Lightning CSS) treats a `url()` filter
+ * reference inside `backdrop-filter` as unsupported syntax and silently deletes
+ * the declaration — verified in the compiled output, where the only surviving
+ * references were inside the `@supports` test. Injecting at runtime keeps the
+ * refraction intact and still lets the scale follow the slider.
+ */
+
+/* --------------------------- ambient background --------------------------- */
+
+.ambient-layer {
+  position: absolute;
+  inset: -22%;
+  opacity: var(--ambient-opacity);
+  transition: opacity 0.9s ease;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  /* Radial gradients are already soft: blurring them per frame would force a
+     full repaint of the backdrop, so only transform/opacity animate here. */
+  will-change: transform;
+  backface-visibility: hidden;
+  transition: background 1.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mesh-veil {
+  background-image:
+    radial-gradient(at 18% 22%, color-mix(in oklab, var(--accent-1) 60%, transparent) 0, transparent 55%),
+    radial-gradient(at 82% 12%, color-mix(in oklab, var(--accent-3) 48%, transparent) 0, transparent 52%),
+    radial-gradient(at 68% 88%, color-mix(in oklab, var(--accent-2) 55%, transparent) 0, transparent 58%);
+}
+
+.vignette {
+  background: radial-gradient(120% 90% at 50% 0%, transparent 40%, rgba(4, 5, 8, 0.72) 100%);
+}
+
+/* ------------------------------ reduced motion ---------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.06s !important;
+    scroll-behavior: auto !important;
+  }
+  .ambient-layer,
+  .blob {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+[data-motion="calm"] .ambient-layer,
+[data-motion="calm"] .blob {
+  animation: none !important;
+}
+[data-motion="calm"] .grain-anim {
+  animation: none !important;
+}
+
+.grain-anim {
+  animation: grain-shift 7s steps(4, end) infinite;
+}
+
+/* indeterminate progress hairline */
+.loading-sweep {
+  animation: loading-sweep 1.15s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+@keyframes loading-sweep {
+  0%   { transform: translateX(-110%); }
+  100% { transform: translateX(420%); }
+}
+
+/* line-mask reveal for headings */
+.reveal-line > span {
+  display: block;
+  overflow: hidden;
+}
+.reveal-line > span > span {
+  display: block;
+  transform: translateY(105%);
+  animation: line-up 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes line-up {
+  to { transform: translateY(0); }
+}
+
+/* ------------------------- Electron frameless window ------------------------ */
+/* The top bar doubles as the window drag region in the desktop build; every
+   interactive element opts out so clicks keep working. Browsers ignore
+   -webkit-app-region entirely, so the web build is unaffected. */
+.echoes-topbar {
+  -webkit-app-region: drag;
+}
+.no-drag,
+.echoes-topbar button,
+.echoes-topbar input,
+.echoes-topbar a,
+.echoes-topbar [role="button"] {
+  -webkit-app-region: no-drag;
+}
+html.desktop .echoes-topbar {
+  padding-right: 7.5rem;
+}
