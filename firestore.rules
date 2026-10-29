@@ -1,0 +1,157 @@
+rules_version = '2';
+
+// ============================================================================
+// Echoes — Firestore Security Rules
+//
+// SOURCE OF TRUTH: this file. Deploy with:
+//     firebase deploy --only firestore:rules
+// or paste this whole block into Firebase Console → Firestore Database → Rules.
+//
+// Keep in sync with:
+//   src/hooks/useCloudSync.ts        (users/{userId} document)
+//   src/lib/echoesPlaylists.ts       (users/{userId}/playlists/{playlistId})
+//
+// Privacy model: every Echoes playlist record carries `isPublicInEchoes`
+// (default false) which is INDEPENDENT of Spotify's own public/private flag.
+// Only that field is ever published; track lists never leave the owner's tree.
+// ============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ----------------------------- helpers ----------------------------------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Strict ownership: a user may only ever touch their own document tree.
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    // Shape validation for users/{userId}. Optional keys are only validated
+    // when present, so partial merges (merge: true) always pass.
+    function validUserDoc(data) {
+      // The main document holds ONLY prefs/palettes. Listening history lives as
+      // individual documents under /history/{historyId}, never as an array here,
+      // so this document can never approach a list-size validation limit.
+      return data.keys().hasAll(['prefs', 'rev', 'updatedAt'])
+        && data.prefs is map
+        && data.rev is int
+        && data.updatedAt is int
+        && (!data.keys().hasAll(['palettes'])
+            || (data.palettes is list && data.palettes.size() <= 60))
+        && !data.keys().hasAll(['history']);
+    }
+
+    // ONE document per track per user (id == trackId). Every field the logger
+    // writes is required and type-checked so malformed writes are rejected.
+    // playCount is derived server-agnostically as floor(playtime / 30).
+    function validHistoryDoc(data) {
+      return data.keys().hasAll([
+          'trackId', 'title', 'artist', 'timestamp',
+          'firstPlayedAt', 'lastPlayedAt',
+          'durationPlayedSeconds', 'totalDurationSeconds',
+          'completionPercentage', 'playCount',
+        ])
+        && data.trackId is string
+        && data.title is string
+        && data.artist is string
+        && data.timestamp is int
+        && data.firstPlayedAt is int
+        && data.lastPlayedAt is int
+        && data.durationPlayedSeconds is int
+        && data.durationPlayedSeconds >= 0
+        && data.totalDurationSeconds is int
+        && data.totalDurationSeconds > 0
+        && data.completionPercentage is int
+        && data.completionPercentage >= 0
+        && data.completionPercentage <= 100
+        && data.playCount is int
+        && data.playCount >= 0;
+    }
+
+    // Shape validation for a playlist privacy record.
+    function validPlaylistDoc(data) {
+      return data.keys().hasAll(['playlistId', 'name', 'ownerUid', 'isPublicInEchoes', 'updatedAt'])
+        && data.playlistId is string
+        && data.name is string
+        && data.ownerUid is string
+        && data.isPublicInEchoes is bool
+        && data.updatedAt is int
+        && (!data.keys().hasAll(['source']) || data.source in ['spotify', 'echoes'])
+        && (!data.keys().hasAll(['trackCount']) || data.trackCount is int);
+    }
+
+    // ------------------- per-user private state ----------------------------
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && validUserDoc(request.resource.data);
+      allow update: if isOwner(userId) && validUserDoc(request.resource.data);
+      allow delete: if isOwner(userId);
+
+      // -------- Echoes playlist privacy (per-playlist visibility) ---------
+      // Owner: always full access. Other signed-in users: READ ONLY, and only
+      // when the record is explicitly public in Echoes. Private playlists are
+      // unreachable by anyone but the owner.
+      match /playlists/{playlistId} {
+        allow read: if isOwner(userId)
+                    || (signedIn() && resource.data.isPublicInEchoes == true);
+        allow create: if isOwner(userId) && validPlaylistDoc(request.resource.data);
+        allow update: if isOwner(userId) && validPlaylistDoc(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Per-play listening sessions: one document each, validated on write.
+      match /history/{historyId} {
+        allow read, list: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validHistoryDoc(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Any other FUTURE subcollection stays strictly private to the owner and
+      // gets an explicit rule when introduced (see the rules workflow).
+      match /{subcollection=**} {
+        allow read, write: if isOwner(userId) && subcollection != 'history';
+      }
+    }
+
+    // --------------- published community playlists (separate) -----------------
+    // A dedicated, flat collection holding COPIES of playlists their owners have
+    // published. Readable by anyone when published; only the owner may create,
+    // update or delete their own published document. Unpublishing deletes the
+    // document, so it vanishes from the community immediately.
+    match /community_playlists/{playlistId} {
+      allow read: if resource.data.isPublicInEchoes == true;
+      allow create: if signedIn()
+                    && request.resource.data.ownerUid == request.auth.uid
+                    && request.resource.data.isPublicInEchoes == true
+                    && validPlaylistDoc(request.resource.data);
+      allow update: if signedIn()
+                    && request.auth.uid == resource.data.ownerUid
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && validPlaylistDoc(request.resource.data);
+      allow delete: if signedIn() && request.auth.uid == resource.data.ownerUid;
+    }
+
+    // ------------------- shared read-mostly catalog -------------------------
+    // Provisioned for future shared/public data (the live catalog lives in
+    // Postgres; seeding uses the Admin SDK which bypasses rules).
+    match /catalog/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Editorial playlists published by Echoes: public read, no client writes.
+    match /shared/playlists/{playlistId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ------------------------- default deny ---------------------------------
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
